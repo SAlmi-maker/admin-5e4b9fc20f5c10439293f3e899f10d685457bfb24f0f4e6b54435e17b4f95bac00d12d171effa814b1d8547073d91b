@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box;}
 html{-webkit-font-smoothing:antialiased;}
-body{margin:0;background:var(--ink);color:var(--paper);font-family:'Inter',system-ui,sans-serif;font-size:14px;}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:'Inter',system-ui,sans-serif;font-size:14px;overflow-x:hidden;}
 button,input,select,textarea{font-family:inherit;}
 
 header{
@@ -29,10 +29,47 @@ header{
 .hinfo{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--concrete);letter-spacing:.14em;}
 header .open{margin-left:auto;color:var(--paper);text-decoration:none;border:1px solid var(--line-strong);padding:9px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;transition:.2s;}
 header .open:hover{border-color:var(--stamp);color:var(--stamp);}
+.menu-btn{display:none;}
+.menu-drawer,.menu-drawer .m-close{display:none;}
 .tabs{display:flex;gap:8px;flex-basis:100%;flex-wrap:wrap;}
 .tabs button{
   background:transparent;border:1px solid var(--line-strong);color:var(--paper-dim);padding:9px 16px;
   border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s;letter-spacing:.03em;
+}
+.tabs button:hover{color:var(--paper);border-color:var(--paper);}
+.tabs button.active{background:var(--stamp);border-color:var(--stamp);color:var(--ink);}
+@media (max-width:680px){
+  header .open{margin-left:0;}
+  .menu-btn{
+    margin-left:auto;display:inline-flex;align-items:center;gap:9px;background:transparent;border:1px solid var(--line-strong);
+    color:var(--paper);padding:9px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;transition:.2s;position:relative;z-index:60;
+  }
+  .menu-btn:hover{border-color:var(--stamp);color:var(--stamp);}
+  .menu-btn .burger{display:flex;flex-direction:column;gap:4px;}
+  .menu-btn .burger i{width:16px;height:2px;background:currentColor;display:block;}
+  .menu-head,.menu-head span,.menu-head .menu-close{display:none;}
+  .tabs{display:none;}
+  .menu-drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:1200;
+    width:min(280px,86vw);background:var(--ink-2);
+    border-left:1px solid var(--line-strong);box-shadow:-14px 0 40px rgba(0,0,0,.5);
+    transform:translateX(100%);transition:transform .4s var(--ease);
+    display:flex;flex-direction:column;padding:72px 22px 30px;overflow-y:auto;
+  }
+  .menu-drawer.open{transform:translateX(0);}
+  .menu-drawer .m-close{
+    display:block;align-self:flex-end;background:none;border:none;color:var(--paper-dim);
+    font-size:26px;line-height:1;cursor:pointer;padding:4px 6px;transition:color .2s;
+  }
+  .menu-drawer .m-close:hover{color:var(--stamp);}
+  .menu-drawer button{
+    margin:0 0 4px;padding:14px 16px;font-size:14px;text-align:left;letter-spacing:.02em;
+    background:transparent;border:1px solid transparent;border-radius:var(--radius);
+    color:var(--paper-dim);cursor:pointer;transition:.2s;
+  }
+  .menu-drawer button:hover{border-color:var(--line-strong);color:var(--paper);}
+  .menu-drawer button.active{background:var(--ink-3);border-color:var(--stamp);color:var(--stamp);}
+  .menu-drawer .m-logout{margin-top:14px;border-top:1px solid var(--line);border-radius:0 0 var(--radius) var(--radius);}
 }
 .tabs button:hover{color:var(--paper);border-color:var(--paper);}
 .tabs button.active{background:var(--stamp);border-color:var(--stamp);color:var(--ink);}
@@ -246,8 +283,11 @@ textarea{resize:vertical;min-height:80px;line-height:1.55;}
 .gate-box input:focus{border-color:var(--stamp);}
 .gate-err{color:var(--danger);font-size:12.5px;min-height:16px;margin:10px 0 0;}
 .gate-btn{width:100%;justify-content:center;margin-top:8px;}
+.gate-link{background:none;border:none;color:var(--concrete);font-size:12.5px;font-weight:600;cursor:pointer;padding:8px 0 2px;transition:color .2s;}
+.gate-link:hover{color:var(--stamp);}
+.gate-link:disabled{opacity:.5;cursor:wait;}
 .gate-note{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--concrete);text-align:center;margin:14px 0 0;}
-#logoutBtn{margin-left:0;background:transparent;cursor:pointer;}
+#logoutBtn{margin-left:auto;background:transparent;cursor:pointer;}
 
 @media (max-width:700px){ .form{grid-template-columns:1fr;} .p-body .m{flex-direction:column;gap:2px;} }
 </style>
@@ -271,6 +311,7 @@ textarea{resize:vertical;min-height:80px;line-height:1.55;}
     <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required>
     <p class="gate-err" id="loginErr"></p>
     <button class="btn solid gate-btn" id="loginSubmit" type="submit">Se connecter</button>
+    <button class="gate-link" id="resetPwBtn" type="button">Mot de passe oublié ?</button>
     <p class="gate-note">Accès réservé à l'administrateur.</p>
   </form>
 </div>
@@ -278,19 +319,32 @@ textarea{resize:vertical;min-height:80px;line-height:1.55;}
 <header>
   <div class="brand">BLK<b>SHOP</b></div>
   <span class="hinfo">// PANNEAU ADMINISTRATEUR</span>
-  <span class="hinfo" title="Version du fichier admin.html">adm-v27</span>
+  <span class="hinfo" title="Version du fichier admin.html">adm-v36</span>
   <span class="hinfo" id="conn" style="color:var(--concrete)">● MODE LOCAL (config Firebase à coller)</span>
-  <a class="open" href="index.html" target="_blank" rel="noopener">Ouvrir la boutique ↗</a>
-  <button class="open" id="logoutBtn" type="button" style="display:none">Déconnexion</button>
-  <nav class="tabs">
+  <button class="menu-btn" id="sectionMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sectionMenu">
+    <span class="burger"><i></i><i></i><i></i></span> Sections
+  </button>
+  <nav class="tabs" aria-label="Sections du panneau (version bureau)">
     <button class="active" data-tab="products">Produits</button>
     <button data-tab="orders">Commandes</button>
     <button data-tab="stats">Statistiques</button>
     <button data-tab="guides">Guides tailles</button>
     <button data-tab="countdown">Compte à rebours</button>
     <button data-tab="news">Bandeau</button>
+    <button class="open" id="logoutBtn" type="button" style="display:none">Déconnexion</button>
   </nav>
 </header>
+
+<nav class="menu-drawer" id="sectionMenu" role="dialog" aria-label="Sections du panneau">
+  <button class="m-close" id="menuClose" type="button" aria-label="Fermer le menu des sections" aria-controls="sectionMenu">&times;</button>
+  <button class="active" data-tab="products">Produits</button>
+  <button data-tab="orders">Commandes</button>
+  <button data-tab="stats">Statistiques</button>
+  <button data-tab="guides">Guides tailles</button>
+  <button data-tab="countdown">Compte à rebours</button>
+  <button data-tab="news">Bandeau</button>
+  <button class="m-logout" id="logoutDrw" type="button" style="display:none">Déconnexion</button>
+</nav>
 
 <main>
   <!-- ============ PRODUITS ============ -->
@@ -595,6 +649,8 @@ function showGate(msg){
   if(g) g.classList.add('show');
   const l = document.getElementById('logoutBtn');
   if(l) l.style.display = 'none';
+  const ld = document.getElementById('logoutDrw');
+  if(ld) ld.style.display = 'none';
   setConnBadge(false);
   if(msg){ const e = document.getElementById('loginErr'); if(e) e.textContent = msg; }
 }
@@ -604,6 +660,8 @@ function hideGate(){
   if(g) g.classList.remove('show');
   const l = document.getElementById('logoutBtn');
   if(l) l.style.display = '';
+  const ld = document.getElementById('logoutDrw');
+  if(ld) ld.style.display = '';
   setConnBadge(true);
 }
 const AUTH_ERRORS = {
@@ -1574,18 +1632,37 @@ document.querySelectorAll('[data-stpreset]').forEach(b=> b.addEventListener('cli
 
 /* ---------------- onglets ---------------- */
 function activateTab(name){
-  const btn = document.querySelector(`.tabs button[data-tab="${name}"]`);
+  const sel = '.tabs button, .menu-drawer button';
+  const btn = document.querySelector(`.tabs button[data-tab="${name}"], .menu-drawer button[data-tab="${name}"]`);
   if(!btn){ if(name !== 'products') activateTab('products'); return; }
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll(sel).forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll(sel).forEach(b=>{ if(b.dataset.tab===name) b.classList.add('active'); });
   document.getElementById(name).classList.add('active');
   localStorage.setItem(KEY.tab, name);
   if(name === 'stats') renderStats();
+  var sm = document.getElementById('sectionMenu'); if(sm) sm.classList.remove('open');
+  var mb = document.getElementById('sectionMenuBtn'); if(mb) mb.setAttribute('aria-expanded','false');
 }
-document.querySelectorAll('.tabs button').forEach(btn=>{
+document.querySelectorAll('.tabs button, .menu-drawer button').forEach(btn=>{
   btn.addEventListener('click', ()=> activateTab(btn.dataset.tab));
 });
+(function(){
+  var mb = document.getElementById('sectionMenuBtn');
+  var menu = document.getElementById('sectionMenu');
+  if(!mb || !menu) return;
+  var mc = document.getElementById('menuClose');
+  function close(){ menu.classList.remove('open'); mb.setAttribute('aria-expanded','false'); }
+  if(mc) mc.addEventListener('click', function(e){ e.stopPropagation(); close(); });
+  mb.addEventListener('click', function(e){
+    e.stopPropagation();
+    if(menu.classList.toggle('open')) mb.setAttribute('aria-expanded','true');
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#sectionMenu') && !e.target.closest('#sectionMenuBtn')) close();
+  });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+})();
 activateTab(localStorage.getItem(KEY.tab) || 'products');
 
 /* ---------------- init ---------------- */
@@ -1635,12 +1712,32 @@ if(loginForm){
     });
   });
 }
-const logoutBtn = document.getElementById('logoutBtn');
-if(logoutBtn){
-  logoutBtn.addEventListener('click', ()=>{
-    if(firebase.auth) firebase.auth().signOut().catch(()=>{});
+const resetPwBtn = document.getElementById('resetPwBtn');
+if(resetPwBtn){
+  resetPwBtn.addEventListener('click', ()=>{
+    const email = (document.getElementById('loginEmail').value || '').trim();
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = ''; errEl.style.color = '';
+    if(!email){ errEl.textContent = 'Entre ton email d\'abord, puis clique sur « Mot de passe oublié ? ».'; return; }
+    if(!fireOn || !firebase.auth){ errEl.textContent = 'Firebase n\'est pas configuré — réinitialisation impossible.'; return; }
+    resetPwBtn.disabled = true; resetPwBtn.textContent = 'Envoi du lien…';
+    firebase.auth().sendPasswordResetEmail(email).then(()=>{
+      errEl.style.color = 'var(--ok)';
+      errEl.textContent = 'Lien de réinitialisation envoyé à ' + email + '. Vérifie ta boîte mail.';
+      resetPwBtn.disabled = false; resetPwBtn.textContent = 'Mot de passe oublié ?';
+    }).catch(err=>{
+      errEl.style.color = '';
+      errEl.textContent = 'Réinitialisation impossible : ' + (err && err.message || err);
+      resetPwBtn.disabled = false; resetPwBtn.textContent = 'Mot de passe oublié ?';
+    });
   });
 }
+const logoutBtn = document.getElementById('logoutBtn');
+document.querySelectorAll('#logoutBtn, #logoutDrw').forEach(lo=>{
+  lo.addEventListener('click', ()=>{
+    if(firebase.auth) firebase.auth().signOut().catch(()=>{});
+  });
+});
 
 if(fireOn && firebase.auth){
   firebase.auth().onAuthStateChanged(u=>{
